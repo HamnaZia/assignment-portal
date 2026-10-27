@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head><title>Assignment Portal</title></head>
+<body>
+  <h1>Assignment Submission Portal</h1>
+
+  {% for e in errors %}<p style="color:red">{{ e }}</p>{% endfor %}
+  {% if message %}<p style="color:green">{{ message }}</p>{% endif %}
+
+  <form method="post">
+    Name: <input name="name"><br>
+    Registration No: <input name="reg_no"><br>
+    Assignment Title: <input name="title"><br>
+    Submission URL: <input name="url"><br>
+    <button type="submit">Submit</button>
+  </form>
+
+  <h2>Saved Submissions</h2>
+  <table border="1">
+    <tr><th>Name</th><th>Reg No</th><th>Title</th><th>URL</th></tr>
+    {% for s in submissions %}
+    <tr><td>{{ s.name }}</td><td>{{ s.reg_no }}</td><td>{{ s.title }}</td><td>{{ s.url }}</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
