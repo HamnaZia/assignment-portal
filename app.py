@@ -32,8 +32,8 @@ def create_app(data_file="submissions.json"):
 
             if not name:
                 errors.append("Name is required.")
-          #  if not reg_no:
-           #     errors.append("Registration number is required.")
+            if not reg_no:
+               errors.append("Registration number is required.")
             if not title:
                 errors.append("Assignment title is required.")
             if not url:
