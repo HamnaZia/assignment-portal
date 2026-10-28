@@ -1,40 +1,40 @@
-name: CI
-
-on: push
-
-jobs:
-  test:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-
-      - name: Run tests
-        run: python -m pytest --junitxml=report.xml
-
-      - name: Send report to localhost receiver
-        if: always()
-        run: python scripts/make_report.py
-        env:
-          RECEIVER_URL: ${{ secrets.RECEIVER_URL }}
-          RECEIVER_TOKEN: ${{ secrets.RECEIVER_TOKEN }}
-
-  deploy:
+  email:
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: always()
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          path: docs
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          name: test-report
+
+      - name: Read report
+        id: r
+        run: |
+          python3 - <<'EOF' >> $GITHUB_OUTPUT
+          import json
+          d = json.load(open('ci-report.json'))
+          s = d['summary']
+          print(f"status={d['overall_status']}")
+          print(f"total={s['total']}")
+          print(f"passed={s['passed']}")
+          print(f"failed={s['failed']}")
+          EOF
+
+      - uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: CI Bot <${{ secrets.EMAIL_USERNAME }}>
+          subject: "Test ${{ steps.r.outputs.status }} - ${{ github.repository }}"
+          body: |
+            Commit: ${{ github.sha }}
+            Overall result: ${{ steps.r.outputs.status }}
+            Total: ${{ steps.r.outputs.total }}
+            Passed: ${{ steps.r.outputs.passed }}
+            Failed: ${{ steps.r.outputs.failed }}
+            Individual test results are in the attached ci-report.json.
+          attachments: ci-report.json

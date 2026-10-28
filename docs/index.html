@@ -1,73 +1,77 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Assignment Portal Demo</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assignment Portal (Demo)</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  input { display: block; margin: 4px 0 10px; padding: 6px; width: 100%; box-sizing: border-box; }
+  .err { color: #c00; } .ok { color: #070; }
+</style>
 </head>
 <body>
-  <h1>Assignment Submission Portal (Demo) - VERSION 2</h1>
-  <p><i>Static demo: submissions are saved in this browser only.</i></p>
-
-  <div id="msg"></div>
-
-  <form id="f">
-    Name: <input id="name"><br><br>
-    Registration No: <input id="reg"><br><br>
-    Assignment Title: <input id="title"><br><br>
-    Submission URL: <input id="url"><br><br>
-    <button type="submit">Submit</button>
-  </form>
-
-  <h2>Saved Submissions</h2>
-  <table border="1" id="t">
-    <tr><th>Name</th><th>Reg No</th><th>Title</th><th>URL</th></tr>
-  </table>
+<h1>Assignment Submission Portal</h1>
+<p><small>Static demo - Version 1. Data is stored in your browser only.</small></p>
+<div id="msg"></div>
+<form id="f">
+  Name <input id="name">
+  Registration No <input id="reg_no">
+  Assignment Title <input id="title">
+  Submission URL <input id="url">
+  <button type="submit">Submit</button>
+</form>
+<h2>Saved Submissions</h2>
+<ul id="list"></ul>
 
 <script>
+const KEY = "submissions";
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } }
+function save(a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} }
 function validUrl(u) {
-  try {
-    const x = new URL(u);
-    return (x.protocol === "http:" || x.protocol === "https:") && x.hostname.includes(".");
-  } catch (e) { return false; }
-}
-function load() {
-  try { return JSON.parse(localStorage.getItem("subs") || "[]"); } catch (e) { return []; }
-}
-function save(a) {
-  try { localStorage.setItem("subs", JSON.stringify(a)); } catch (e) {}
+  if (/\s/.test(u)) return false;
+  try { const p = new URL(u); return p.protocol === "http:" || p.protocol === "https:"; }
+  catch (e) { return false; }
 }
 function render() {
-  const t = document.getElementById("t");
-  t.innerHTML = "<tr><th>Name</th><th>Reg No</th><th>Title</th><th>URL</th></tr>";
-  load().forEach(s => {
-    const r = t.insertRow();
-    [s.name, s.reg, s.title, s.url].forEach(v => { r.insertCell().textContent = v; });
-  });
-}
-document.getElementById("f").addEventListener("submit", e => {
-  e.preventDefault();
-  const v = {
-    name: document.getElementById("name").value.trim(),
-    reg: document.getElementById("reg").value.trim(),
-    title: document.getElementById("title").value.trim(),
-    url: document.getElementById("url").value.trim()
-  };
-  const errs = [];
-  if (!v.name) errs.push("Name is required.");
-  if (!v.reg) errs.push("Registration number is required.");
-  if (!v.title) errs.push("Assignment title is required.");
-  if (!v.url) errs.push("Submission URL is required.");
-  else if (!validUrl(v.url)) errs.push("Submission URL is invalid.");
-  const m = document.getElementById("msg");
-  if (errs.length) {
-    m.innerHTML = errs.map(x => '<p style="color:red"></p>').join("");
-    m.querySelectorAll("p").forEach((p, i) => p.textContent = errs[i]);
+  const ul = document.getElementById("list");
+  ul.innerHTML = "";
+  const subs = load();
+  if (!subs.length) {
+    const li = document.createElement("li");
+    li.textContent = "No submissions yet.";
+    ul.appendChild(li);
     return;
   }
-  const a = load(); a.push(v); save(a);
-  m.innerHTML = '<p style="color:green">Submission saved.</p>';
-  document.getElementById("f").reset();
+  subs.forEach(s => {
+    const li = document.createElement("li");
+    li.append(s.name + " | " + s.reg_no + " | " + s.title + " | ");
+    const a = document.createElement("a");
+    a.href = s.url; a.textContent = s.url;
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+}
+document.getElementById("f").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  const v = {};
+  ["name", "reg_no", "title", "url"].forEach(k => v[k] = document.getElementById(k).value.trim());
+  const errors = [];
+  if (!v.name) errors.push("Name is required.");
+  if (!v.reg_no) errors.push("Registration number is required.");
+  if (!v.title) errors.push("Assignment title is required.");
+  if (!v.url) errors.push("Submission URL is required.");
+  else if (!validUrl(v.url)) errors.push("Submission URL is invalid.");
+  const msg = document.getElementById("msg");
+  msg.innerHTML = "";
+  if (errors.length) {
+    errors.forEach(e => { const p = document.createElement("p"); p.className = "err"; p.textContent = e; msg.appendChild(p); });
+    return;
+  }
+  const subs = load(); subs.push(v); save(subs);
+  const p = document.createElement("p"); p.className = "ok"; p.textContent = "Submission saved!";
+  msg.appendChild(p);
+  this.reset();
   render();
 });
 render();
