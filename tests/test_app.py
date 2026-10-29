@@ -19,7 +19,7 @@ def good_form():
 def test_valid_submission_is_saved(client):
     c, path = client
     r = c.post("/", data=good_form())
-    assert r.status_code == 500
+    assert r.status_code == 200
     assert b"Submission saved." in r.data
     assert b"FA22-BSE-001" in r.data          # appears in list
 
