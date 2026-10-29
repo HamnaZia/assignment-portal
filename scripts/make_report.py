@@ -28,7 +28,8 @@ report = {
     "failed": failed,
     "overall_status": "passed" if tests and failed == 0 else "failed",
 }
-
+with open("test-report.json", "w") as f:
+    json.dump(report, f, indent=2)
 req = urllib.request.Request(
     os.environ["RECEIVER_URL"].rstrip("/") + "/report",
     data=json.dumps(report).encode(),
