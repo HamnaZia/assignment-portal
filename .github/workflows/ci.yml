@@ -20,13 +20,13 @@ jobs:
         env:
           RECEIVER_URL: ${{ secrets.RECEIVER_URL }}
           RECEIVER_TOKEN: ${{ secrets.RECEIVER_TOKEN }}
-
+          
       - name: Email report
         if: always()
         run: python scripts/send_email.py
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
 
   deploy:

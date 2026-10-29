@@ -32,19 +32,22 @@ lines = [
     "",
     "Individual results:",
 ]
-for name, result, msg in tests:
+for name, result, msg_text in tests:
     line = "  - %s: %s" % (name, result)
-    if msg:
-        line += "\n      Failure: " + msg
+    if msg_text:
+        line += "\n      Failure: " + msg_text
     lines.append(line)
 lines.append("")
 lines.append("The full JSON report is attached.")
 
-user = os.environ["EMAIL_USER"]
+user = os.environ["EMAIL_USER"].strip()
+password = os.environ["EMAIL_PASSWORD"].replace(" ", "").strip()
+to_addr = os.environ["EMAIL_TO"].strip()
+
 msg = EmailMessage()
 msg["Subject"] = "[%s] %s - %s" % (overall, repo, sha[:7])
 msg["From"] = user
-msg["To"] = os.environ["EMAIL_TO"]
+msg["To"] = to_addr
 msg.set_content("\n".join(lines))
 
 if os.path.exists("test-report.json"):
@@ -52,8 +55,22 @@ if os.path.exists("test-report.json"):
         msg.add_attachment(f.read(), maintype="application",
                            subtype="json", filename="test-report.json")
 
-ctx = ssl.create_default_context()
-with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ctx) as s:
-    s.login(user, os.environ["EMAIL_PASS"])
-    s.send_message(msg)
-print("Email sent to", msg["To"])
+
+def send():
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465,
+                              context=ssl.create_default_context(),
+                              timeout=30) as s:
+            s.login(user, password)
+            s.send_message(msg)
+        return
+    except Exception as e:
+        print("Port 465 failed:", repr(e))
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as s:
+        s.starttls(context=ssl.create_default_context())
+        s.login(user, password)
+        s.send_message(msg)
+
+
+send()
+print("Email sent to", to_addr)
